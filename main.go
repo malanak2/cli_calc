@@ -11,7 +11,7 @@ import (
 )
 
 func validateExpression(expression string) bool {
-	compPattern, err := regexp.Compile("\\d*.*\\d* *[+*/\\-] *\\d*.*\\d*")
+	compPattern, err := regexp.Compile("\\d*.?\\d* *[+*/\\-] *\\d*.?\\d*") // Numbers[.]Numbers
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -31,8 +31,18 @@ func main() {
 			continue
 		}
 		output, er := expr.Eval(expres, nil)
+
 		if er != nil {
 			log.Fatal("An unexpected error has occured. (", er, ")\n")
+		}
+		pattern, err := regexp.Compile(".*\\/0([^.]|$|\\.(0{4,}.*|0{1,4}([^0-9]|$))).*") // https://stackoverflow.com/a/41122334
+		if er != nil {
+			log.Fatal("An unexpected error has occured. (", er, ")\n")
+		}
+		out := pattern.Match([]byte(expres))
+		if out {
+			fmt.Print("Cannot divide by zero\n")
+			continue
 		}
 		fmt.Print(output, "\n")
 	}
