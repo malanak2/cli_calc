@@ -16,24 +16,27 @@ func validateExpression(expression string) bool {
 		log.Fatal(err)
 	}
 	res1 := compPattern.Match([]byte(expression))
-	res2, err := regexp.Match("[a-zA-Z]", []byte(expression))                        // No letters
+	res2, err := regexp.Match("[a-zA-Z]", []byte(expression)) // No letters
+	if err != nil {
+		log.Fatal("An unexpected error has occured. (", err, ")\n")
+	}
 	pattern, err := regexp.Compile(".*\\/0([^.]|$|\\.(0{4,}.*|0{1,4}([^0-9]|$))).*") // https://stackoverflow.com/a/41122334
 	if err != nil {
 		log.Fatal("An unexpected error has occured. (", err, ")\n")
 	}
 	res3 := pattern.Match([]byte(expression))
-
 	return res1 && !res2 && !res3
 }
 
 func main() {
-	for true {
+	for {
 		fmt.Print("Please enter a mathematical expression:")
 		in := bufio.NewReader(os.Stdin)
 		expres, err := in.ReadString('\n')
 		if err != nil {
 			log.Fatal(err)
 		}
+
 		if !validateExpression(expres) {
 			fmt.Print("Invalid expression. Please try again\n")
 			continue
