@@ -15,7 +15,15 @@ func validateExpression(expression string) bool {
 	if err != nil {
 		log.Fatal(err)
 	}
-	return compPattern.Match([]byte(expression))
+	res1 := compPattern.Match([]byte(expression))
+	res2, err := regexp.Match("[a-zA-Z]", []byte(expression))                        // No letters
+	pattern, err := regexp.Compile(".*\\/0([^.]|$|\\.(0{4,}.*|0{1,4}([^0-9]|$))).*") // https://stackoverflow.com/a/41122334
+	if err != nil {
+		log.Fatal("An unexpected error has occured. (", err, ")\n")
+	}
+	res3 := pattern.Match([]byte(expression))
+
+	return res1 && !res2 && !res3
 }
 
 func main() {
@@ -26,24 +34,14 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		letter, err := regexp.Match("[a-zA-Z]", []byte(expres)) // Prevent letters in equation
-		if !validateExpression(expres) || letter {              // Validate that is a valid mathematical expression
+		if !validateExpression(expres) {
 			fmt.Print("Invalid expression. Please try again\n")
 			continue
 		}
-		output, er := expr.Eval(expres, nil)
 
+		output, er := expr.Eval(expres, nil) // Eval math
 		if er != nil {
 			log.Fatal("An unexpected error has occured. (", er, ")\n")
-		}
-		pattern, err := regexp.Compile(".*\\/0([^.]|$|\\.(0{4,}.*|0{1,4}([^0-9]|$))).*") // https://stackoverflow.com/a/41122334
-		if er != nil {
-			log.Fatal("An unexpected error has occured. (", er, ")\n")
-		}
-		out := pattern.Match([]byte(expres))
-		if out {
-			fmt.Print("Cannot divide by zero\n")
-			continue
 		}
 		fmt.Print(output, "\n")
 	}
