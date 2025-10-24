@@ -11,7 +11,7 @@ import (
 )
 
 func validateExpression(expression string) bool {
-	compPattern, err := regexp.Compile("\\d*.?\\d* *[+*/\\-] *\\d*.?\\d*") // Numbers[.]Numbers
+	compPattern, err := regexp.Compile("^\\d+.?\\d* *[+*/\\-] *\\d+.?\\d*") // {beginExpr} Numbers[.]Numbers [+-/*] Numbers[.]Numbers
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -26,7 +26,8 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		if !validateExpression(expres) {
+		letter, err := regexp.Match("[a-zA-Z]", []byte(expres)) // Prevent letters in equation
+		if !validateExpression(expres) || letter {              // Validate that is a valid mathematical expression
 			fmt.Print("Invalid expression. Please try again\n")
 			continue
 		}
