@@ -15,13 +15,6 @@ import (
 
 var isDebug = false
 
-type node struct {
-	parent *node
-	right  *node
-	left   *node
-	value  string
-}
-
 func debug(a ...any) {
 	if isDebug {
 		fmt.Print(a...)
@@ -44,12 +37,11 @@ func validateExpression(expression string) bool {
 	containsDivisionByZeroResult := pattern.Match([]byte(expression))
 	return containsExpressionResult && !containsLettersResult && !containsDivisionByZeroResult
 }
+
+// parse_expression function    Parse expression contained in a string into and [][]string, which contains grouped up single symbol expressions, resembling a tree
 func parse_expression(expression string) [][]string {
 	number := ""
-	nodes := []node{}
 	expression_separated := []string{}
-	var root = node{value: ""}
-	nodes = append(nodes, root)
 	// Convert expression to an array of values (numbers, symbols(+-*/)). This cannot be done by just seperating by spaces, since they are not guaranteed
 	for _, char := range expression {
 		// Ignore spaces
@@ -137,13 +129,16 @@ func parse_expression(expression string) [][]string {
 
 		case "*", "/":
 			if index == 1 {
+				// last_num symbol next_num
 				groups = append(groups, []string{expression_separated[index-1], i, expression_separated[index+1]})
 				continue
 			}
 			if strings.Contains("/*", expression_separated[index-2]) {
+				// last_symbol symbol next_num
 				groups = append(groups, []string{expression_separated[index-2], i, expression_separated[index+1]})
 				continue
 			}
+			// last_num symbol next_num
 			groups = append(groups, []string{expression_separated[index-1], i, expression_separated[index+1]})
 		}
 	}
@@ -179,12 +174,15 @@ func calculate_expression(parsed_expression [][]string) string {
 		results = append(results, "")
 	}
 	lastRes := ""
+	// Until uncalculated results remain or until broken from
 	for slices.Contains(results, "") {
 		for index, expression := range parsed_expression {
+			// No need to recalculate
 			if results[index] != "" {
 				continue
 			}
 			debug("result ", index, " is empty (", expression[0], ", ", expression[2], ")\n")
+			// See if numbers are in both places
 			a, a_err := strconv.ParseFloat(expression[0], 64)
 			b, b_err := strconv.ParseFloat(expression[2], 64)
 
@@ -195,9 +193,11 @@ func calculate_expression(parsed_expression [][]string) string {
 			} else {
 				a, b := "", ""
 				if a_err != nil {
+					// Find the closest occurance of the symbol to the left
 					for i := index; i >= 0; i-- {
 						if parsed_expression[i][1] == expression[0] {
 							debug("Found expression a with result ", results[i], "\n")
+							// Only if it is calculated
 							if results[i] != "" {
 								a = results[i]
 								break
@@ -208,9 +208,11 @@ func calculate_expression(parsed_expression [][]string) string {
 					a = expression[0]
 				}
 				if b_err != nil {
+					// Find the closest occurance of the symbol to the right
 					for i := index; i < len(parsed_expression); i++ {
 						if parsed_expression[i][1] == expression[2] {
 							debug("Found expression b with result ", results[i], "\n")
+							// Only if it is calculated
 							if results[i] != "" {
 								b = results[i]
 								break
@@ -241,11 +243,7 @@ func main() {
 		fmt.Print("Please enter a mathematical expression or q to quit:")
 		in := bufio.NewReader(os.Stdin)
 		expres, err := in.ReadString('\n')
-		if strings.Contains("q", expres) {
-			debug("Bye!")
-			return
-		}
-		// expres := "6 + 8 * 5 + 7"
+
 		if err != nil {
 			log.Fatal(err)
 		}
