@@ -5,6 +5,10 @@ Building requires the go package
 go mod tidy
 go run cli_calc
 ```
+To run in debug mode, add the -d flag
+```shell
+go run cli_calc -d
+```
 
 ### Examples
 
