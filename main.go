@@ -162,7 +162,7 @@ func calculate_group(a float64, b float64, char string) string {
 	case "/":
 		debug("Calculating result: ", a, "/", b, "\n")
 		if b == 0 {
-			// Crasher the program, what can you do :)
+			// Crashes the program, what can you do :)
 			log.Fatal("Cannot divide by zero")
 		}
 		return strconv.FormatFloat(a/b, 'f', -1, 64)
