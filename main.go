@@ -13,6 +13,8 @@ import (
 	"github.com/expr-lang/expr"
 )
 
+var isDebug = false
+
 type node struct {
 	parent *node
 	right  *node
@@ -20,6 +22,11 @@ type node struct {
 	value  string
 }
 
+func debug(a ...any) {
+	if isDebug {
+		fmt.Print(a...)
+	}
+}
 func validateExpression(expression string) bool {
 	compPattern, err := regexp.Compile(`^\d+.?\d* *[+*/\-] *\d+.?\d*`) // {beginExpr} Numbers[.]Numbers [+-/*] Numbers[.]Numbers
 	if err != nil {
@@ -55,25 +62,31 @@ func parse_expression(expression string) [][]string {
 			continue
 		}
 		// Next char kinda has to be a symbol in list, so if not, invalid expression
-		if !strings.Contains("/*-+\n", string(char)) {
+		if !strings.Contains("/*-+\n\r", string(char)) {
 			log.Fatal("An unexpected error has occured. ( Invalid character found: ", string(char), " )\n")
 			return [][]string{}
 		}
+		// Dont want to add newline or the windows bs to our expression, now do we
 		expression_separated = append(expression_separated, number)
 		number = ""
-		if string(char) != "\n" {
+		if !strings.Contains("\n\r", string(char)) {
 			expression_separated = append(expression_separated, string(char))
 		}
 	}
 	// An expression really shouldn't end in a symbol, so expect a number to be left over
-	if number != "" {
-		expression_separated = append(expression_separated, number)
-		number = ""
-	}
+	// if number != "" {
+	// 	expression_separated = append(expression_separated, number)
+	// 	number = ""
+	// }
+	//
+	// Windows is stupid, remove empty elements
 	for _, i := range expression_separated {
-		fmt.Print(i, ", ")
+		if i == "" {
+			expression_separated = expression_separated[:len(expression_separated)-1]
+		}
+		debug(i, ", ")
 	}
-	fmt.Print("\n")
+	debug("\n")
 	// group
 	groups := [][]string{}
 	for index, i := range expression_separated {
@@ -135,82 +148,123 @@ func parse_expression(expression string) [][]string {
 		}
 	}
 	for _, i := range groups {
-		fmt.Print(i, ", ")
+		debug(i, ", ")
 	}
-	fmt.Print("\n")
+	debug("\n")
 	return groups
 }
+func calculate_group(a float64, b float64, char string) string {
+	debug("Calculating result: ", a, char, b, "\n")
+	switch char {
+	case "+":
+		debug("Calculating result: ", a, "+", b, "\n")
+		return strconv.FormatFloat(a+b, 'f', -1, 64)
+	case "-":
+		debug("Calculating result: ", a, "-", b, "\n")
+		return strconv.FormatFloat(a-b, 'f', -1, 64)
+	case "*":
+		debug("Calculating result: ", a, "*", b, "\n")
+		return strconv.FormatFloat(a*b, 'f', -1, 64)
+	case "/":
+		debug("Calculating result: ", a, "/", b, "\n")
+		return strconv.FormatFloat(a/b, 'f', -1, 64)
+	}
+	return ""
+}
+
+// calculate_expression function    Calculates the result of an expression from parsed expression
 func calculate_expression(parsed_expression [][]string) string {
 	results := []string{}
-	fmt.Print("Result init\n")
+	debug("Result init\n")
 	for range parsed_expression {
 		results = append(results, "")
 	}
+	lastRes := ""
 	for slices.Contains(results, "") {
 		for index, expression := range parsed_expression {
 			if results[index] != "" {
 				continue
 			}
-			fmt.Print("result ", index, " is empty (", expression[0], ", ", expression[2], ")\n")
-			// TODO: Calculate expressions that are complex
+			debug("result ", index, " is empty (", expression[0], ", ", expression[2], ")\n")
 			a, a_err := strconv.ParseFloat(expression[0], 64)
 			b, b_err := strconv.ParseFloat(expression[2], 64)
 
 			if a_err == nil && b_err == nil {
-				fmt.Print("Calculating result ", index, "\n")
-				switch expression[1] {
-				case "+":
-					results[index] = strconv.FormatFloat(a+b, 'f', -1, 64)
-					continue
-				case "-":
-					results[index] = strconv.FormatFloat(a-b, 'f', -1, 64)
-					continue
-				case "*":
-					results[index] = strconv.FormatFloat(a*b, 'f', -1, 64)
-					continue
-				case "/":
-					results[index] = strconv.FormatFloat(a/b, 'f', -1, 64)
-					continue
-				}
+				results[index] = calculate_group(a, b, expression[1])
+
+				lastRes = results[index]
 			} else {
+				a, b := "", ""
 				if a_err != nil {
-					// TODO: Get previous group of this symbol and check for value
+					for i := index; i >= 0; i-- {
+						if parsed_expression[i][1] == expression[0] {
+							debug("Found expression a with result ", results[i], "\n")
+							if results[i] != "" {
+								a = results[i]
+								break
+							}
+						}
+					}
+				} else {
+					a = expression[0]
 				}
 				if b_err != nil {
-					// TODO: Get next group of this symbol and check for value
+					for i := index; i < len(parsed_expression); i++ {
+						if parsed_expression[i][1] == expression[2] {
+							debug("Found expression b with result ", results[i], "\n")
+							if results[i] != "" {
+								b = results[i]
+								break
+							}
+						}
+					}
+				} else {
+					b = expression[2]
 				}
-				// TODO: If both values exist, calculate result
-				fmt.Print("A: ", a_err.Error(), ", B: ", b_err.Error(), "\n")
+				if a != "" && b != "" {
+					resA, _ := strconv.ParseFloat(a, 64)
+					resB, _ := strconv.ParseFloat(b, 64)
+					debug("Calculating result: ", resA, expression[1], resB, "\n")
+					results[index] = calculate_group(resA, resB, expression[1])
+					lastRes = results[index]
+				}
 			}
 		}
 	}
-	return results[0]
+	return lastRes
 }
 func main() {
-	//for {
-	fmt.Print("Please enter a mathematical expression or q to quit:")
-	in := bufio.NewReader(os.Stdin)
-	expres, err := in.ReadString('\n')
-	// expres := "6 + 8 * 5 + 7"
-	if err != nil {
-		log.Fatal(err)
+	if len(os.Args) > 1 && os.Args[1] == "-d" {
+		isDebug = true
+		debug("Launching in debug mode...\n")
 	}
-	if expres == "q" {
-		return
-	}
-	if !validateExpression(expres) {
-		fmt.Print("Invalid expression. Please try again\n")
-		return
-		// continue
-	}
+	for {
+		fmt.Print("Please enter a mathematical expression or q to quit:")
+		in := bufio.NewReader(os.Stdin)
+		expres, err := in.ReadString('\n')
+		if strings.Contains("q", expres) {
+			debug("Bye!")
+			return
+		}
+		// expres := "6 + 8 * 5 + 7"
+		if err != nil {
+			log.Fatal(err)
+		}
+		if strings.TrimSpace(expres) == "q" {
+			fmt.Print("Bye!")
+			return
+		}
+		if !validateExpression(expres) {
+			fmt.Print("Invalid expression. Please try again\n")
+			continue
+		}
 
-	output, er := expr.Eval(expres, nil) // Eval math
-	if er != nil {
-		log.Fatal("An unexpected error has occured. (", er, ")\n")
+		output, er := expr.Eval(expres, nil) // Eval math
+		if er != nil {
+			log.Fatal("An unexpected error has occured. (", er, ")\n")
+		}
+		parsed_expression := parse_expression(expres)
+		fmt.Print("Result: ", calculate_expression(parsed_expression), "\n")
+		debug("Verification output from lib:", output, "\n")
 	}
-	parsed_expression := parse_expression(expres)
-	fmt.Print("Result: ", calculate_expression(parsed_expression), "\n")
-	fmt.Print("Verification output from lib:", output, "\n")
-	//}
-
 }
