@@ -161,6 +161,10 @@ func calculate_group(a float64, b float64, char string) string {
 		return strconv.FormatFloat(a*b, 'f', -1, 64)
 	case "/":
 		debug("Calculating result: ", a, "/", b, "\n")
+		if b == 0 {
+			// Crasher the program, what can you do :)
+			log.Fatal("Cannot divide by zero")
+		}
 		return strconv.FormatFloat(a/b, 'f', -1, 64)
 	}
 	return ""
@@ -196,9 +200,9 @@ func calculate_expression(parsed_expression [][]string) string {
 					// Find the closest occurance of the symbol to the left
 					for i := index; i >= 0; i-- {
 						if parsed_expression[i][1] == expression[0] {
-							debug("Found expression a with result ", results[i], "\n")
 							// Only if it is calculated
 							if results[i] != "" {
+								debug("Found expression a with result ", results[i], "\n")
 								a = results[i]
 								break
 							}
@@ -211,9 +215,9 @@ func calculate_expression(parsed_expression [][]string) string {
 					// Find the closest occurance of the symbol to the right
 					for i := index; i < len(parsed_expression); i++ {
 						if parsed_expression[i][1] == expression[2] {
-							debug("Found expression b with result ", results[i], "\n")
 							// Only if it is calculated
 							if results[i] != "" {
+								debug("Found expression b with result ", results[i], "\n")
 								b = results[i]
 								break
 							}
@@ -225,7 +229,6 @@ func calculate_expression(parsed_expression [][]string) string {
 				if a != "" && b != "" {
 					resA, _ := strconv.ParseFloat(a, 64)
 					resB, _ := strconv.ParseFloat(b, 64)
-					debug("Calculating result: ", resA, expression[1], resB, "\n")
 					results[index] = calculate_group(resA, resB, expression[1])
 					lastRes = results[index]
 				}
