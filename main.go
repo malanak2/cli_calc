@@ -28,12 +28,12 @@ func debug(a ...any) {
 	}
 }
 func validateExpression(expression string) bool {
-	compPattern, err := regexp.Compile(`^\d+.?\d* *[+*/\-] *\d+.?\d*`) // {beginExpr} Numbers[.]Numbers [+-/*] Numbers[.]Numbers
+	containsExpressionPattern, err := regexp.Compile(`^\d+.?\d* *[+*/\-] *\d+.?\d*`) // {beginExpr} Numbers[.]Numbers [+-/*] Numbers[.]Numbers
 	if err != nil {
 		log.Fatal(err)
 	}
-	res1 := compPattern.Match([]byte(expression))
-	res2, err := regexp.Match("[a-zA-Z]", []byte(expression)) // No letters
+	containsExpressionResult := containsExpressionPattern.Match([]byte(expression))
+	containsLettersResult, err := regexp.Match("[a-zA-Z]", []byte(expression)) // No letters
 	if err != nil {
 		log.Fatal("An unexpected error has occured. (", err, ")\n")
 	}
@@ -41,8 +41,8 @@ func validateExpression(expression string) bool {
 	if err != nil {
 		log.Fatal("An unexpected error has occured. (", err, ")\n")
 	}
-	res3 := pattern.Match([]byte(expression))
-	return res1 && !res2 && !res3
+	containsDivisionByZeroResult := pattern.Match([]byte(expression))
+	return containsExpressionResult && !containsLettersResult && !containsDivisionByZeroResult
 }
 func parse_expression(expression string) [][]string {
 	number := ""
@@ -154,7 +154,6 @@ func parse_expression(expression string) [][]string {
 	return groups
 }
 func calculate_group(a float64, b float64, char string) string {
-	debug("Calculating result: ", a, char, b, "\n")
 	switch char {
 	case "+":
 		debug("Calculating result: ", a, "+", b, "\n")
