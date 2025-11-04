@@ -398,13 +398,9 @@ func main() {
 			return
 		}
 
-		output, er := expr.Eval(expres, nil) // Eval math
-		if er != nil {
-			log.Fatal("An unexpected error has occured. (", er, ")\n")
-		}
 		parsed_expression, err := parse_expression(expres)
 		if err != nil {
-			fmt.Print(err.Error())
+			fmt.Print(err.Error(), "\n")
 			continue
 		}
 
@@ -415,6 +411,11 @@ func main() {
 		}
 		fmt.Print("Result: ", result, "\n")
 		if isDebug {
+
+			output, er := expr.Eval(expres, nil) // Eval math
+			if er != nil {
+				log.Fatal("An unexpected error has occured. (", er, ")\n")
+			}
 			debug("Verification output from lib:", output, "\n")
 		}
 	}
